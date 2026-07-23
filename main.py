@@ -2,10 +2,15 @@ from playwright.sync_api import sync_playwright,Browser,Page
 import pandas as pd
 import re
 from typing import Final
+from typing import cast
 import os
+from pathlib import Path
+import time
+
 
 JMETER_REPORT_FOLDER: Final[str] = "jmeter_report"
 VERIFY_CONFIG_FOLDER: Final[str] = "verify_config"
+OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
 def extract_table_data(html_file: str) -> pd.DataFrame:
     with sync_playwright() as p:
@@ -44,6 +49,9 @@ def extract_table_data(html_file: str) -> pd.DataFrame:
 
         # 等待一下讓使用者看到結果
         page.wait_for_timeout(2000)
+
+        screenshot = out / f"check_{int(time.time())}.png"
+        page.screenshot(path=screenshot, full_page=True)
 
         # 關閉瀏覽器
         browser.close()
@@ -157,7 +165,7 @@ def verify_results(df_report: pd.DataFrame, df_config: pd.DataFrame) -> list[str
                 )
 
         # pass_cnt check — strategy depends on name_rule
-        pass_row, select_err = _select_pass_row(matching, script_name, name_rule)
+        pass_row, select_err = _select_pass_row(cast(pd.DataFrame, matching), script_name, name_rule)
         if select_err is not None:
             failures.append(select_err)
             continue
@@ -171,17 +179,22 @@ def verify_results(df_report: pd.DataFrame, df_config: pd.DataFrame) -> list[str
     return failures
 
 if __name__ == "__main__":
+    out = OUTPUT_DIR
+    out.mkdir(exist_ok=True)
     current_dir: str = os.path.dirname(os.path.abspath(__file__))
 
+    # 選擇Jmeter html file
     html_file: str = os.path.join(
         current_dir, JMETER_REPORT_FOLDER,
         "core_PT_1__report-core_PT_1-2026-07-21_154922", "index.html"
     )
     df_report = extract_table_data(html_file)
 
+    # 選擇verify config
     config_file = os.path.join(current_dir, VERIFY_CONFIG_FOLDER, "core_PT_1.csv")
     df_config = read_verify_config(config_file)
 
+    # 進行verify_results
     failures = verify_results(df_report, df_config)
     if failures:
         print(f"Verification FAILED ({len(failures)} issues):")
