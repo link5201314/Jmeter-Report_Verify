@@ -1,10 +1,19 @@
 [project]
 name = "jmeter-report-verify"
 version = "0.1.0"
-description = "Add your description here"
+description = "Automated verification of JMeter performance test reports against predefined criteria"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "pandas>=3.0.5",
     "playwright>=1.61.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

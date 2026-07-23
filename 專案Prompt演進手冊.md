@@ -24,7 +24,7 @@
 
 ---
 
-## Prompt 01：優化檢查邏輯
+## Prompt 01：優化檢查邏輯(規則表達式匹配label)
 
 ```text
 # 現階段程式邏輯
@@ -53,5 +53,33 @@ actual_pct_90th < expected_pct_90th
 4. 必要時可調整函數名稱
 
 # 分析時請不要嘗試去讀取jmeter_report報告的實際內容，直接參考practice3.py的程式邏輯即可
+
+```
+
+## Prompt 02：優化檢查邏輯(增加seq、final、single三種策略選擇)
+
+```text
+# 腳色：你是資深 Python 應用工程師。請直接參考目前專案並依任務目標繼續改進與優化程式。
+
+# 任務目標：
+
+## 請先閱讀現有程式(現有核心程式：main.py)、README.md
+
+## 然後我已經手動先修改了verify_config/core_PT_1.csv檔案，添加了一個新的欄位「name_rule」
+
+##「name_rule」只會有三種值[seq、final、single]，
+這三種欄位將決定verify_results函式在對不同的script_name進行actual_pass < expected_pass檢驗時所採用的策略，
+說明如下
+- seq: 如果該欄位是這個值，那麼就採目前verify_results原本的邏輯
+- final: 每個script_name的所有步驟中，一定要包含一個script_name-<Final>.*的步驟，將採用此項目的數值作為該script_name的actual_pass
+- single：該script_name都只會有一個步驟，所以只要找到唯一的script_name.*項目(也就是以script_name開頭即可)，
+就採用此項目的數值作為該script_name的actual_pass
+
+# 無論「name_rule」採用哪種策略，都應該只能match到一個目標，如果存在match一個以上，也要視作失敗，但錯誤訊息應該要跟一個也match不到有所需別
+
+## 這個新的欄位並不影響actual_pct_90th < expected_pct_90th原本的檢驗邏輯
+
+
+# 注意事項：請直接修改或建立完整檔案，不要只給範例片段或偽程式碼。同時更新 pyproject.toml 與 README，提供 uv 安裝/執行指令，並加入對核心函式的基本測試。完成後請實際執行語法檢查與 smoke test，回報修改檔案、執行方法與驗收結果。
 
 ```
