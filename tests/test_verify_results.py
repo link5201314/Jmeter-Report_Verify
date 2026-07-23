@@ -1,6 +1,6 @@
 import pandas as pd
 
-from main import verify_results, _select_pass_row, _extract_step_tuple
+from core import verify_results, _select_pass_row, _extract_step_tuple
 
 
 # ---------------------------------------------------------------------------

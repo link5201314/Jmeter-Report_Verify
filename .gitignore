@@ -1,6 +1,11 @@
 # Output directory
 output/
 
+# Playwright browsers - keep directory structure only
+ms-playwright/**
+!ms-playwright/**/
+!ms-playwright/**/.gitkeep
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

@@ -11,6 +11,11 @@
 
 檢查完成後輸出 **PASSED** 或列出所有不合格項目。
 
+本工具提供兩種使用方式：
+
+- **GUI 模式** — tkinter 圖形介面，深藍青綠色系現代化 UI
+- **CLI 模式** — 命令列直接執行
+
 ## 環境需求
 
 - Python >= 3.12
@@ -22,12 +27,17 @@
 # 1. 安裝依賴
 uv sync
 
-# 2. 安裝 Playwright 瀏覽器
+# 2. 安裝 Playwright 瀏覽器（安裝至專案下的 ms-playwright/ 目錄）
 uv run playwright install chromium
 
-# 3. 執行驗證
-uv run main.py
+# 3. 啟動 GUI
+uv run python gui.py
+
+# 4. CLI 模式（直接編輯 main.py 中的路徑後執行）
+uv run python main.py
 ```
+
+> **備註**：本專案預設使用工作目錄下的 `ms-playwright/` 目錄存放 Playwright 瀏覽器，而非預設的 `%LOCALAPPDATA%\ms-playwright\`。此設計方便未來打包為獨立 exe 時，可將瀏覽器一併打包，無需額外安裝。
 
 ## 執行測試
 
@@ -39,9 +49,14 @@ uv run --group dev pytest -v
 
 ```
 .
-├── main.py                  # 主程式，包含報告抓取、設定檔讀取與驗證邏輯
+├── core.py                  # 核心業務邏輯（報告抓取、設定檔讀取、驗證比對）
+├── gui.py                   # tkinter GUI 入口
+├── main.py                  # CLI 入口，引用 core.py
 ├── pyproject.toml           # 專案依賴設定
+├── ms-playwright/           # Playwright 瀏覽器（本地存放，便於打包）
+│   └── chromium-1228/
 ├── tests/
+│   ├── test_core.py         # core 模組單元測試
 │   └── test_verify_results.py  # verify_results 函式單元測試
 ├── verify_config/           # 驗證標準 CSV 設定檔
 │   └── core_PT_1.csv        # 各腳本的 P90 門檻與預期通過樣本數
@@ -49,6 +64,30 @@ uv run --group dev pytest -v
     └── core_PT_1__report-core_PT_1-2026-07-21_154922/
         └── index.html       # JMeter HTML Dashboard 報告
 ```
+
+## 模組說明
+
+### core.py
+
+核心業務邏輯模組，提供以下函式：
+
+| 函式 | 說明 |
+|------|------|
+| `extract_table_data(html_file, headless, output_dir)` | 使用 Playwright 從 JMeter HTML 報告提取表格資料 |
+| `read_verify_config(config_file)` | 讀取 CSV 驗證設定檔 |
+| `verify_results(df_report, df_config)` | 比對報告與設定，回傳失敗訊息列表 |
+| `verify_results_detail(df_report, df_config)` | 回傳結構化逐列比對結果（供 GUI 使用） |
+| `list_report_folders(jmeter_dir)` | 列出目錄下含 index.html 的子目錄 |
+| `list_verify_configs(config_dir)` | 列出 verify_config 目錄下的 CSV 檔名 |
+
+### gui.py
+
+tkinter GUI 應用程式，提供：
+
+- 左側控制面板：Jmeter 目錄選擇、verify_config 下拉選單、Headless 開關
+- 右側結果表格：逐列顯示 Label、P90、pass_cnt 比對結果
+- 底部執行日誌與操作按鈕
+- Playwright 在 background worker thread 執行，不會卡住 UI
 
 ## 驗證設定檔格式
 
@@ -93,6 +132,7 @@ uv run --group dev pytest -v
    - 檢查每個步驟的 P90 是否低於門檻
    - 依 `name_rule` 策略選取代表步驟，驗證匹配唯一性後檢查其通過樣本數是否達標
    - 所有失敗項目累積後一次回傳
+4. **`verify_results_detail()`** — 回傳逐列結構化結果，每筆包含 Label、P90 比對、pass_cnt 比對與 check_result
 
 ## 授權條款
 

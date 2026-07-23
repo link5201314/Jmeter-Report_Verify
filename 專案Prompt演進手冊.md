@@ -83,3 +83,28 @@ actual_pct_90th < expected_pct_90th
 # 注意事項：請直接修改或建立完整檔案，不要只給範例片段或偽程式碼。同時更新 pyproject.toml 與 README，提供 uv 安裝/執行指令，並加入對核心函式的基本測試。完成後請實際執行語法檢查與 smoke test，回報修改檔案、執行方法與驗收結果。
 
 ```
+
+## Prompt 03： 視窗App（tkinter）
+
+```text
+
+你是資深 Python 桌面應用工程師與 UI/UX 設計師。請直接為目前專案建立一個繁體中文 tkinter 的 Jmeter Html報告通過標準驗證 App。
+
+現有核心程式：main.py
+請先閱讀現有程式與README.md，將「選擇Jmeter html file、選擇verify config、進行verify_results」重構為可供 UI 呼叫的函式，不要改變原本可執行行為。
+
+介面需求：
+1. 1200x760 左右雙欄佈局，深藍與青綠色系，使用 ttk.Style 製作現代化卡片、按鈕與狀態標籤。
+2. 左側有Jmeter目錄路徑(點即可開啟filedialog，路徑預設開啟當前工作目錄下的jmeter_report目錄)、verify_config下拉選單(包含當前工作目錄內的verify_config資料夾下的檔名)、headless 開關 與「開始檢查」按鈕。
+3. 右側顯示比對結果表格，包含script_name、name_rule、expected_pct_90th、actual_pct_90th、expected_pass、actual_pass，以及最後面用來顯示比對結果的check_result欄位。
+4. actual_pct_90th，就是該script_name內所有step的pct_90th都達標就顯示pass，否則則顯示其中最大的pct_90th數值
+5. 另外check_result欄位，一樣要考慮name_rule策略沒有正確匹配，也是要當作Fail
+6. 日誌處仍一樣要顯示所有的failures
+7. 底部有可滾動的執行日誌、「開啟輸出資料夾」與「清除結果」。
+8. Playwright 必須放在 background worker thread，絕對不能卡住 tkinter mainloop；所有 UI 更新必須安全回到主執行緒。
+9. 建立core.py作為核心模組，重構main.py引用核心模組提供原本的cli執行方式，再新增 gui.py 做為 UI 入口。
+10. 本專案預設不建立資料庫。
+
+請直接建立完整檔案，不要只給範例片段或偽程式碼。同時更新 pyproject.toml 與 README，提供 uv 安裝/執行指令，並加入對核心函式的基本測試。完成後請實際執行語法檢查與 smoke test，回報修改檔案、執行方法與驗收結果。
+
+```
