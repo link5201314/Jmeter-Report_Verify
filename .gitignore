@@ -1,6 +1,16 @@
 # Output directory
 output/
 
+# JMeter report files - keep directory only
+jmeter_report/**
+!jmeter_report/**/
+!jmeter_report/.gitkeep
+
+# Verify config files - keep directory only
+verify_config/**
+!verify_config/**/
+!verify_config/.gitkeep
+
 # Playwright browsers - keep directory structure only
 ms-playwright/**
 !ms-playwright/**/
