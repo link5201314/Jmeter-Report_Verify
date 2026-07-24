@@ -137,17 +137,17 @@ class TestVerifyResultsDetail:
         assert len(detail) == 1
         assert "No matching labels" in str(detail[0]["check_result"])
         assert detail[0]["actual_pass"] == "-"
-        assert detail[0]["actual_pct_90th"] == "PASS"
+        assert detail[0]["actual_pct_90th"] == "N/A"
 
     def test_name_rule_error(self) -> None:
         report = _make_report([
-            ("CAR_01-<Final>_GET", 500, 0, 100),
-            ("CAR_01-<Final>_POST", 600, 0, 200),
+            ("CAR_01-【Final】_GET", 500, 0, 100),
+            ("CAR_01-【Final】_POST", 600, 0, 200),
         ])
         config = _make_config("CAR_01", "final", pct_90th=5000, expected_pass=500)
         detail = verify_results_detail(report, config)
         assert len(detail) == 1
-        assert "Multiple <Final>" in str(detail[0]["check_result"])
+        assert "Multiple 【Final】" in str(detail[0]["check_result"])
         assert detail[0]["actual_pass"] == "-"
 
     def test_all_fields_present(self) -> None:

@@ -69,12 +69,12 @@ class TestSelectPassRowFinal:
         report = _make_report([
             ("CAR_01-1_0_GET", 200, 0, 100),
             ("CAR_01-2_0_POST", 300, 0, 200),
-            ("CAR_01-<Final>_GET", 500, 0, 300),
+            ("CAR_01-【Final】_GET", 500, 0, 300),
         ])
         row, err = _select_pass_row(report, "CAR_01", "final")
         assert err is None
         assert row is not None
-        assert "<Final>" in row["Label"]
+        assert "【Final】" in row["Label"]
         assert row["pass_cnt"] == 500
 
     def test_no_final_label(self) -> None:
@@ -83,16 +83,16 @@ class TestSelectPassRowFinal:
         ])
         row, err = _select_pass_row(report, "CAR_01", "final")
         assert row is None
-        assert "No <Final> label" in err  # type: ignore[union-attr]
+        assert "No 【Final】 label" in err  # type: ignore[union-attr]
 
     def test_multiple_final_labels(self) -> None:
         report = _make_report([
-            ("CAR_01-<Final>_GET", 500, 0, 100),
-            ("CAR_01-<Final>_POST", 600, 0, 200),
+            ("CAR_01-【Final】_GET", 500, 0, 100),
+            ("CAR_01-【Final】_POST", 600, 0, 200),
         ])
         row, err = _select_pass_row(report, "CAR_01", "final")
         assert row is None
-        assert "Multiple <Final> labels" in err  # type: ignore[union-attr]
+        assert "Multiple 【Final】 labels" in err  # type: ignore[union-attr]
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +173,7 @@ class TestVerifyResultsFinal:
     def test_pass(self) -> None:
         report = _make_report([
             ("CAR_01-1_0_GET", 200, 0, 100),
-            ("CAR_01-<Final>_GET", 500, 0, 300),
+            ("CAR_01-【Final】_GET", 500, 0, 300),
         ])
         config = _make_config("CAR_01", "final", pct_90th=5000, expected_pass=500)
         assert verify_results(report, config) == []
@@ -181,7 +181,7 @@ class TestVerifyResultsFinal:
     def test_fail_pass_cnt(self) -> None:
         report = _make_report([
             ("CAR_01-1_0_GET", 200, 0, 100),
-            ("CAR_01-<Final>_GET", 100, 0, 300),
+            ("CAR_01-【Final】_GET", 100, 0, 300),
         ])
         config = _make_config("CAR_01", "final", pct_90th=5000, expected_pass=500)
         failures = verify_results(report, config)
@@ -195,17 +195,17 @@ class TestVerifyResultsFinal:
         config = _make_config("CAR_01", "final", pct_90th=5000, expected_pass=500)
         failures = verify_results(report, config)
         assert len(failures) == 1
-        assert "No <Final> label" in failures[0]
+        assert "No 【Final】 label" in failures[0]
 
     def test_multiple_final_labels(self) -> None:
         report = _make_report([
-            ("CAR_01-<Final>_GET", 500, 0, 100),
-            ("CAR_01-<Final>_POST", 600, 0, 200),
+            ("CAR_01-【Final】_GET", 500, 0, 100),
+            ("CAR_01-【Final】_POST", 600, 0, 200),
         ])
         config = _make_config("CAR_01", "final", pct_90th=5000, expected_pass=500)
         failures = verify_results(report, config)
         assert len(failures) == 1
-        assert "Multiple <Final> labels" in failures[0]
+        assert "Multiple 【Final】 labels" in failures[0]
 
 
 class TestVerifyResultsSingle:

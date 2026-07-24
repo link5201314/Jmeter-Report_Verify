@@ -16,6 +16,9 @@ ms-playwright/**
 !ms-playwright/**/
 !ms-playwright/**/.gitkeep
 
+# Nuitka
+nuitka-crash-report.xml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

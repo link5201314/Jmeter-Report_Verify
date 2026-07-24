@@ -115,12 +115,12 @@ def _select_pass_row(
     *error_message* is ``None`` on success.
     """
     if name_rule == "final":
-        final_matching = matching[matching["Label"].str.contains("<Final>", regex=False)]
+        final_matching = matching[matching["Label"].str.contains("【Final】", regex=False)]
         if len(final_matching) == 0:
-            return None, f"{script_name}: No <Final> label found in report"
+            return None, f"{script_name}: No 【Final】 label found in report"
         if len(final_matching) > 1:
             return None, (
-                f"{script_name}: Multiple <Final> labels found ({len(final_matching)}), "
+                f"{script_name}: Multiple 【Final】 labels found ({len(final_matching)}), "
                 "expected exactly one"
             )
         return final_matching.iloc[0], None
@@ -222,8 +222,10 @@ def verify_results_detail(
 
         # --- P90 check across all matched labels ---
         max_failing_p90: int | None = None
+        actual_pct_90th_display: object
         if matching.empty:
             checks.append("No matching labels found in report")
+            actual_pct_90th_display = "N/A"
         else:
             for _, report_row in matching.iterrows():
                 actual_p90 = _safe_int(report_row['90th pct'])
@@ -234,6 +236,7 @@ def verify_results_detail(
                 checks.append(
                     f"90th pct FAIL (max {max_failing_p90} >= {expected_pct_90th})"
                 )
+            actual_pct_90th_display = "PASS" if max_failing_p90 is None else max_failing_p90
 
         # --- pass_cnt check via name_rule strategy ---
         actual_pass: object = "-"
@@ -251,7 +254,6 @@ def verify_results_detail(
                         f"pass_cnt ({actual_pass_val}) < expected ({expected_pass})"
                     )
 
-        actual_pct_90th_display: object = "PASS" if max_failing_p90 is None else max_failing_p90
         check_result = "PASS" if not checks else "; ".join(checks)
 
         results.append({
