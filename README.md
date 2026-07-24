@@ -80,14 +80,12 @@ uv sync --group dev
 **CLI 版本：**
 
 ```powershell
-python -m nuitka main.py `
+uv run python -m nuitka main.py `
     --standalone `
     --output-dir=dist\cli `
     --output-filename=JmeterReportVerify-CLI.exe `
     --lto=yes `
     --follow-imports `
-    --include-package=pandas `
-    --include-package=playwright `
     --include-package-data=playwright `
     --include-data-dir=ms-playwright=ms-playwright `
     --include-data-dir=verify_config=verify_config `
@@ -98,16 +96,13 @@ python -m nuitka main.py `
 **GUI 版本：**
 
 ```powershell
-python -m nuitka gui.py `
+uv run python -m nuitka gui.py `
     --standalone `
     --output-dir=dist\gui `
     --output-filename=JmeterReportVerify-GUI.exe `
     --lto=yes `
     --enable-plugins=tk-inter `
     --windows-console-mode=disable `
-    --follow-imports `
-    --include-package=pandas `
-    --include-package=playwright `
     --include-package-data=playwright `
     --include-data-dir=ms-playwright=ms-playwright `
     --include-data-dir=verify_config=verify_config `

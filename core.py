@@ -25,6 +25,13 @@ OUTPUT_DIR: Final[Path] = BASE_DIR / "output"
 os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(BASE_DIR / "ms-playwright")
 
 
+def _safe_int(value: object) -> int:
+    """Convert a value to int, handling float strings (e.g. '159.0')."""
+    if isinstance(value, float):
+        return int(value)
+    return int(float(str(value).replace(',', '')))
+
+
 def extract_table_data(
     html_file: str,
     headless: bool = True,
@@ -77,9 +84,11 @@ def extract_table_data(
 def read_verify_config(config_file: str) -> pd.DataFrame:
     df = pd.read_csv(config_file)
     df['expected_pass_samples'] = (
-        df['expected_pass_samples']
-        .astype(str)
-        .str.replace(',', '', regex=False)
+        pd.to_numeric(
+            df['expected_pass_samples'].astype(str).str.replace(',', '', regex=False),
+            errors='coerce',
+        )
+        .fillna(0)
         .astype(int)
     )
     return df
@@ -140,8 +149,8 @@ def verify_results(df_report: pd.DataFrame, df_config: pd.DataFrame) -> list[str
     for _, row in df_config.iterrows():
         script_name: str = str(row['script_name'])
         name_rule: str = str(row['name_rule'])
-        expected_pct_90th: int = int(str(row['90th_pct']))
-        expected_pass: int = int(str(row['expected_pass_samples']))
+        expected_pct_90th: int = _safe_int(row['90th_pct'])
+        expected_pass: int = _safe_int(row['expected_pass_samples'])
 
         if name_rule == "single":
             pattern = f"^{re.escape(script_name)}"
@@ -167,7 +176,7 @@ def verify_results(df_report: pd.DataFrame, df_config: pd.DataFrame) -> list[str
             failures.append(select_err)
             continue
 
-        actual_pass = int(pass_row['pass_cnt'])  # type: ignore[union-attr]
+        actual_pass = _safe_int(pass_row['pass_cnt'])  # type: ignore[union-attr]
         if actual_pass < expected_pass:
             failures.append(
                 f"{pass_row['Label']}: pass_cnt ({actual_pass}) < expected ({expected_pass})"  # type: ignore[index]
@@ -199,8 +208,8 @@ def verify_results_detail(
     for _, row in df_config.iterrows():
         script_name: str = str(row['script_name'])
         name_rule: str = str(row['name_rule'])
-        expected_pct_90th: int = int(str(row['90th_pct']))
-        expected_pass: int = int(str(row['expected_pass_samples']))
+        expected_pct_90th: int = _safe_int(row['90th_pct'])
+        expected_pass: int = _safe_int(row['expected_pass_samples'])
 
         if name_rule == "single":
             pattern = f"^{re.escape(script_name)}"
@@ -217,7 +226,7 @@ def verify_results_detail(
             checks.append("No matching labels found in report")
         else:
             for _, report_row in matching.iterrows():
-                actual_p90 = int(str(report_row['90th pct']))
+                actual_p90 = _safe_int(report_row['90th pct'])
                 if actual_p90 >= expected_pct_90th:
                     if max_failing_p90 is None or actual_p90 > max_failing_p90:
                         max_failing_p90 = actual_p90
@@ -235,7 +244,7 @@ def verify_results_detail(
             if select_err is not None:
                 checks.append(select_err)
             else:
-                actual_pass_val = int(pass_row['pass_cnt'])  # type: ignore[union-attr]
+                actual_pass_val = _safe_int(pass_row['pass_cnt'])  # type: ignore[union-attr]
                 actual_pass = actual_pass_val
                 if actual_pass_val < expected_pass:
                     checks.append(
