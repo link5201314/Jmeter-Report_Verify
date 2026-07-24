@@ -33,8 +33,30 @@ uv run playwright install chromium
 # 3. 啟動 GUI
 uv run python gui.py
 
-# 4. CLI 模式（直接編輯 main.py 中的路徑後執行）
+# 4. CLI 模式（不加參數使用預設配置）
 uv run python main.py
+
+# 5. CLI 模式（指定參數）
+uv run python main.py --report <報告目錄> --config <設定檔名> --headless
+```
+
+### CLI 參數
+
+| 參數 | 說明 | 預設值 |
+|------|------|--------|
+| `--report` | JMeter 報告目錄路徑 | `jmeter_report/core_PT_1__report-core_PT_1-2026-07-21_154922` |
+| `--config` | 驗證設定檔名（不含 .csv） | `core_PT_1` |
+| `--headless` | 使用 headless 模式（無瀏覽器畫面） | 關閉（顯示瀏覽器） |
+
+```bash
+# 範例：指定報告目錄與設定檔
+uv run python main.py --report D:\reports\my_test --config my_config
+
+# 範例：使用 headless 模式
+uv run python main.py --report D:\reports\my_test --config my_config --headless
+
+# 範例：顯示說明
+uv run python main.py --help
 ```
 
 > **備註**：本專案預設使用工作目錄下的 `ms-playwright/` 目錄存放 Playwright 瀏覽器，而非預設的 `%LOCALAPPDATA%\ms-playwright\`。此設計方便未來打包為獨立 exe 時，可將瀏覽器一併打包，無需額外安裝。
@@ -45,13 +67,125 @@ uv run python main.py
 uv run --group dev pytest -v
 ```
 
+## Nuitka 打包
+
+本專案使用 [Nuitka](https://nuitka.net/) 將 Python 腳本編譯為獨立 exe。打包前需先安裝 Nuitka：
+
+```bash
+uv sync --group dev
+```
+
+### 打包指令
+
+**CLI 版本：**
+
+```powershell
+python -m nuitka main.py `
+    --standalone `
+    --output-dir=dist\cli `
+    --output-filename=JmeterReportVerify-CLI.exe `
+    --lto=yes `
+    --follow-imports `
+    --include-package=pandas `
+    --include-package=playwright `
+    --include-package-data=playwright `
+    --include-data-dir=ms-playwright=ms-playwright `
+    --include-data-dir=verify_config=verify_config `
+    --include-data-dir=jmeter_report=jmeter_report `
+    --assume-yes-for-downloads
+```
+
+**GUI 版本：**
+
+```powershell
+python -m nuitka gui.py `
+    --standalone `
+    --output-dir=dist\gui `
+    --output-filename=JmeterReportVerify-GUI.exe `
+    --lto=yes `
+    --enable-plugins=tk-inter `
+    --windows-console-mode=disable `
+    --follow-imports `
+    --include-package=pandas `
+    --include-package=playwright `
+    --include-package-data=playwright `
+    --include-data-dir=ms-playwright=ms-playwright `
+    --include-data-dir=verify_config=verify_config `
+    --include-data-dir=jmeter_report=jmeter_report `
+    --assume-yes-for-downloads
+```
+
+### 輸出目錄結構
+
+打包完成後，exe 與所有依賴目錄同級放置：
+
+```
+dist\cli\main.dist\                          # 或 dist\gui\gui.dist\
+├── JmeterReportVerify-CLI.exe               # 主程式（CLI 版 ~211 MB）
+├── ms-playwright\                            # Playwright Chromium 瀏覽器（~688 MB）
+│   ├── chromium-1228\
+│   │   └── chrome-win64\
+│   │       ├── chrome.exe
+│   │       └── ...
+│   ├── chromium_headless_shell-1228\
+│   └── ffmpeg-1011\
+├── verify_config\                            # 驗證標準 CSV 設定檔
+│   └── core_PT_1.csv
+├── jmeter_report\                            # JMeter HTML 報告
+│   └── core_PT_1__report-...\
+│       └── index.html
+├── output\                                   # 截圖輸出（運行時自動建立）
+├── *.pyd                                     # Python 擴充模組
+├── *.dll                                     # 依賴 DLL
+└── Python312.dll
+```
+
+### 注意事項
+
+1. **exe 大小**：exe 本身約 211 MB，但因包含 Chromium 瀏覽器（~688 MB），完整 dist 目錄約 **1 GB**。
+
+2. **GUI 版 ms-playwright 快取問題**：Nuitka 的 ccache 快取機制可能導致 GUI 打包時 ms-playwright 資料不完整（缺少 `chrome.exe` 等關鍵檔案）。若重新打包 GUI，建議先刪除 `dist\gui` 目錄再執行，或手動從原始 `ms-playwright/` 補齊。
+
+3. **Visual C++ Redistributable**：打包時可能提示缺少 `msvcp140.dll`。目標機器需安裝 [Visual C++ Redistributable for Visual Studio 2015-2022](https://aka.ms/vs/17/release/vc_redist.x64.exe)，或將該 DLL 放入 dist 目錄。
+
+4. **LTO（Link Time Optimization）**：打包指令已加入 `--lto=yes`，可最佳化 exe 大小與效能，但會顯著增加編譯時間（約 14 分鐘）。
+
+5. **程式碼簽署**：打包後的 exe 尚未簽署，需透過 `signtool` 另行處理：
+
+   ```powershell
+   signtool sign /n IsaacTestApp /tr http://timestamp.digicert.com /td sha256 "path\to\JmeterReportVerify-CLI.exe"
+   signtool sign /n IsaacTestApp /tr http://timestamp.digicert.com /td sha256 "path\to\JmeterReportVerify-GUI.exe"
+   ```
+
+6. **相對路徑處理**：`core.py` 中的 `BASE_DIR` 會依據執行環境自動判斷：
+   - Python 直譯執行：`__file__` 所在目錄
+   - Nuitka 編譯執行：`sys.executable` 所在目錄（即 exe 所在目錄）
+
+   確保打包後 `ms-playwright/`、`verify_config/`、`jmeter_report/`、`output/` 與 exe 同級放置即可正確存取。
+
+7. **CLI exe 參數用法**：打包後的 CLI exe 支援與 Python 腳本相同的參數：
+
+   ```powershell
+   # 不加參數 — 使用預設配置
+   JmeterReportVerify-CLI.exe
+
+   # 指定報告目錄與設定檔
+   JmeterReportVerify-CLI.exe --report D:\reports\my_test --config my_config
+
+   # 使用 headless 模式
+   JmeterReportVerify-CLI.exe --report D:\reports\my_test --config my_config --headless
+
+   # 顯示說明
+   JmeterReportVerify-CLI.exe --help
+   ```
+
 ## 專案結構
 
 ```
 .
 ├── core.py                  # 核心業務邏輯（報告抓取、設定檔讀取、驗證比對）
 ├── gui.py                   # tkinter GUI 入口
-├── main.py                  # CLI 入口，引用 core.py
+├── main.py                  # CLI 入口，支援 argparse 參數，引用 core.py
 ├── pyproject.toml           # 專案依賴設定
 ├── ms-playwright/           # Playwright 瀏覽器（本地存放，便於打包）
 │   └── chromium-1228/

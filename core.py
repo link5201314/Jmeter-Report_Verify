@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright, Browser, Page
 import pandas as pd
 import re
+import sys
 from typing import Final, cast
 import os
 from pathlib import Path
@@ -9,7 +10,16 @@ import time
 
 JMETER_REPORT_FOLDER: Final[str] = "jmeter_report"
 VERIFY_CONFIG_FOLDER: Final[str] = "verify_config"
-BASE_DIR: Final[Path] = Path(__file__).resolve().parent
+
+# 判斷是否是打包後的環境，因__file__在打包後的路徑不會是.exe檔案的路徑
+is_compiled = getattr(sys, "nuitka_binary", None) or "__compiled__" in globals()
+
+BASE_DIR: Final[Path] = (
+    Path(sys.executable).parent.resolve()
+    if is_compiled
+    else Path(__file__).parent.resolve()
+)
+
 OUTPUT_DIR: Final[Path] = BASE_DIR / "output"
 
 os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(BASE_DIR / "ms-playwright")
@@ -44,7 +54,8 @@ def extract_table_data(
             if clean_cells:
                 data.append(clean_cells)
 
-        page.wait_for_timeout(2000)
+        if not headless:
+            page.wait_for_timeout(2000)
 
         screenshot = output_dir / f"check_{int(time.time())}.png"
         page.screenshot(path=str(screenshot), full_page=True)
@@ -206,7 +217,7 @@ def verify_results_detail(
             checks.append("No matching labels found in report")
         else:
             for _, report_row in matching.iterrows():
-                actual_p90 = int(report_row['90th pct'])
+                actual_p90 = int(str(report_row['90th pct']))
                 if actual_p90 >= expected_pct_90th:
                     if max_failing_p90 is None or actual_p90 > max_failing_p90:
                         max_failing_p90 = actual_p90
